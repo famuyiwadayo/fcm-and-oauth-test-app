@@ -14,6 +14,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 messaging.usePublicVapidKey(
-  "BPb-n9Ds7ESPxD2eskV1Vc_tlnoOvGfXH2TAMBmdw-v2MHAfu1HmVsv0paB8NfRydDqwbwW6fODBRs2k2XEBDK8"
+  "BJzwFM48BQn87wD0JQGm9dvSRLm4ka0z2NdatKn_ZBleRuONQiTaXVkGkZ7Hj4uY6CZRa7xsKQv175kfbkBqamg"
 );
 export { messaging };

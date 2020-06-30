@@ -1,12 +1,62 @@
 import React, { useEffect, useState } from "react";
-import logo from "./logo.svg";
+// import logo from "./logo.svg";
 import "./App.css";
-import { GoogleLogin } from "react-google-login";
-import FacebookLogin from "react-facebook-login";
-import Pusher from "pusher-js";
+// import { GoogleLogin } from "react-google-login";
+// import FacebookLogin from "react-facebook-login";
+// import Pusher from "pusher-js";
 import { messaging } from "./firebase";
 import print from "fingerprintjs2";
 import axios from "axios";
+import { format, isFuture } from "date-fns";
+import { start } from "repl";
+import eachMinuteOfInterval from "./eachMinuteOfInterval";
+import curry from "lodash/fp/curryRight";
+import throttle from "lodash/throttle";
+import { count } from "console";
+// import * as _ from 'lodash';
+
+const curriedFormat = curry(format)({});
+
+// const timeIntervals = (start: Date, end: Date, interval: number) =>
+//   eachMinuteOfInterval({ start, end }, { step: interval }).map(
+//     flow(curriedFormat("h:mm a"), filter(isFuture))
+//   );
+
+const timeIntervals = (
+  start: Date,
+  end: Date,
+  interval: number,
+  format = "h:mm a"
+) =>
+  eachMinuteOfInterval({ start, end }, { step: interval })
+    .filter(isFuture)
+    .map((date) => curriedFormat(format)(date));
+
+let now = new Date();
+
+const morning = timeIntervals(
+  new Date(now.setHours(0, 0)),
+  new Date(now.setHours(11, 59)),
+  15
+);
+
+console.log("Morning", morning);
+
+const afternoon = timeIntervals(
+  new Date(now.setHours(12, 0)),
+  new Date(now.setHours(17, 45)),
+  15
+);
+
+console.log("Afternoon", afternoon);
+
+const evening = timeIntervals(
+  new Date(now.setHours(18, 0)),
+  new Date(now.setHours(23, 59)),
+  15
+);
+
+console.log("Evening", evening);
 
 function App() {
   const currentUserId = "e72dd6cb-533a-4251-beec-b974eff7ec3d";
@@ -15,7 +65,7 @@ function App() {
     const values = components.map(function (component) {
       return component.value;
     });
-    console.log("Components", components);
+    // console.log("Components", components);
     return print.x64hash128(values.join(""), 31);
   };
 
@@ -34,15 +84,41 @@ function App() {
     result && localStorage.setItem("_vid_", token);
   };
 
+  // const startDate = new Date();
+  // const endDate = Date.now();
+
+  const [count, setCount] = useState(0);
+
+  let now = new Date();
+  let startDate = new Date(now.setHours(12, 0));
+  let endDate = new Date(now.setHours(17, 45));
+  const intervals = eachMinuteOfInterval(
+    { start: startDate, end: endDate },
+    { step: 15 }
+  )
+    .filter(isFuture)
+    .map((date) => format(date, "h:mm a"));
+
+  // console.log("Intervals", intervals);
+  // console.log(new Date(endDate));
+
   const [token, setToken] = useState("");
   const [fingerprint, setFingerprint] = useState("");
   const requestIdleCallback = (window as any).requestIdleCallback;
 
   useEffect(() => {
+    throttle(
+      () => {
+        console.log(count + 1);
+      },
+      500,
+      { trailing: true }
+    );
+
     messaging
       .requestPermission()
       .then((p) => {
-        console.log("Have permission");
+        // console.log("Have permission");
         return messaging.getToken();
         // p === "granted" && console.log(messaging.getToken());
       })
@@ -62,7 +138,7 @@ function App() {
         print.get((components) => {
           const _fingerprint = getFingerprint(components);
           setFingerprint(_fingerprint);
-          console.log("Finger Print Hash", _fingerprint);
+          // console.log("Finger Print Hash", _fingerprint);
         });
       });
     } else {
@@ -70,7 +146,7 @@ function App() {
         print.get((components) => {
           const _fingerprint = getFingerprint(components);
           setFingerprint(_fingerprint);
-          console.log("Finger Print Hash", _fingerprint);
+          // console.log("Finger Print Hash", _fingerprint);
         });
       }, 500);
     }
@@ -81,7 +157,7 @@ function App() {
     //   fingerprint &&
     //   (!oldFingerprint || !oldToken) &&
     //   sendTokenToServer(fingerprint, token);
-  }, [token, fingerprint]);
+  }, [token, fingerprint, count]);
 
   const responseGoogle = (res: any) => {
     console.clear();
@@ -117,6 +193,21 @@ function App() {
           /> */}
           <div style={{ maxWidth: 400 }}>{fingerprint}</div>
           <div style={{ maxWidth: 400 }}>{token}</div>
+          {count}
+
+          <button
+            onClick={() => {
+              throttle(
+                () => {
+                  setCount((prev) => prev + 1);
+                },
+                500,
+                { trailing: true }
+              );
+            }}
+          >
+            Click me {count}
+          </button>
         </div>
       </header>
     </div>
